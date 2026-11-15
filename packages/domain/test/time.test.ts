@@ -1,13 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import {
-  addDays,
-  addMinutes,
-  diffMinutes,
-  toInstant,
-  toLocalDate,
-  weekdayOf,
-} from '../src/index';
+import { addDays, addMinutes, diffMinutes, toInstant, toLocalDate, weekdayOf } from '../src/index';
 import type { IanaZone, LocalDate, LocalTime } from '../src/index';
 
 describe('toInstant', () => {

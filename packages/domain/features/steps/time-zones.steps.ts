@@ -31,13 +31,10 @@ When(
   },
 );
 
-Then(
-  '{string} starts at {word} UTC',
-  async (world: TimeWorld, name: string, utc: string) => {
-    const instant = toInstant(world.day!, world.routines.get(name)!, world.zone);
-    expect(instant.slice(11, 16)).toBe(utc);
-  },
-);
+Then('{string} starts at {word} UTC', async (world: TimeWorld, name: string, utc: string) => {
+  const instant = toInstant(world.day!, world.routines.get(name)!, world.zone);
+  expect(instant.slice(11, 16)).toBe(utc);
+});
 
 Then(
   '{string} happens at {word} local time',
