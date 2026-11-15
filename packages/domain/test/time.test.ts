@@ -1,4 +1,5 @@
 import fc from 'fast-check';
+import { Temporal } from 'temporal-polyfill';
 import { describe, expect, it } from 'vitest';
 import { addDays, addMinutes, diffMinutes, toInstant, toLocalDate, weekdayOf } from '../src/index';
 import type { IanaZone, LocalDate, LocalTime } from '../src/index';
@@ -44,18 +45,41 @@ describe('arithmetic', () => {
 });
 
 describe('round trip property', () => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const time = (h: number, m: number) => `${pad(h)}:${pad(m)}` as LocalTime;
+
   it('toLocalDate(toInstant(d,t,z), z) === d', () => {
     const zones: IanaZone[] = ['Europe/Madrid', 'America/New_York', 'Asia/Kolkata', 'UTC'];
-    const dateArb = fc
+    const anyDate = fc
       .integer({ min: 0, max: 364 })
-      .map((n) => addDays('2026-01-01', n) as LocalDate);
-    const timeArb = fc
+      .map((n) => Temporal.PlainDate.from('2026-01-01').add({ days: n }).toString() as LocalDate);
+    const dstDate = fc.constantFrom<LocalDate>(
+      '2026-03-29',
+      '2026-10-25',
+      '2026-03-08',
+      '2026-11-01',
+    );
+    const anyTime = fc
       .tuple(fc.integer({ min: 0, max: 23 }), fc.integer({ min: 0, max: 59 }))
-      .map(([h, m]) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` as LocalTime);
+      .map(([h, m]) => time(h, m));
+    const dstTime = fc
+      .tuple(fc.integer({ min: 1, max: 3 }), fc.integer({ min: 0, max: 59 }))
+      .map(([h, m]) => time(h, m));
+    const dateTime = fc.oneof(fc.tuple(anyDate, anyTime), fc.tuple(dstDate, dstTime));
     fc.assert(
-      fc.property(dateArb, timeArb, fc.constantFrom(...zones), (d, t, z) => {
+      fc.property(dateTime, fc.constantFrom(...zones), ([d, t], z) => {
         expect(toLocalDate(toInstant(d, t, z), z)).toBe(d);
       }),
     );
+  });
+});
+
+describe('arithmetic across the Madrid 2026-03-29 transition', () => {
+  it('addMinutes counts absolute minutes', () => {
+    expect(addMinutes('2026-03-29T00:30:00Z', 60)).toBe('2026-03-29T01:30:00Z');
+  });
+  it('addDays steps calendar days', () => {
+    expect(addDays('2026-03-28', 1)).toBe('2026-03-29');
+    expect(addDays('2026-03-29', 1)).toBe('2026-03-30');
   });
 });
