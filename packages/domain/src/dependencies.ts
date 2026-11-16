@@ -38,6 +38,7 @@ export function findCycle(items: Node[]): string[] | null {
  * An occurrence waits while any same-day occurrence of a dependency is still
  * open. Dependencies with no occurrence that day are ignored, and done or
  * skipped occurrences release the wait.
+ * Occurrences in `sameDay` from other local dates are ignored.
  */
 export function isBlocked(
   occ: Occurrence,
