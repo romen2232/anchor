@@ -13,17 +13,18 @@ function isWeekday(value: string): value is Weekday {
 
 export function parseRRule(rrule: string): Weekday[] {
   const match = /^FREQ=WEEKLY;BYDAY=(.*)$/.exec(rrule);
-  if (!match) throw new InvalidRecurrenceError(`Unsupported recurrence rule: ${rrule}`);
-  const days = match[1]!.split(',');
-  const parsed: Weekday[] = [];
-  for (const day of days) {
+  const list = match?.[1];
+  if (list === undefined) throw new InvalidRecurrenceError(`Unsupported recurrence rule: ${rrule}`);
+  const parsed = new Set<Weekday>();
+  for (const day of list.split(',')) {
     if (!isWeekday(day)) throw new InvalidRecurrenceError(`Invalid weekday "${day}" in: ${rrule}`);
-    parsed.push(day);
+    parsed.add(day);
   }
-  return parsed;
+  return ORDER.filter((d) => parsed.has(d));
 }
 
 export function toRRule(byDay: Weekday[]): string {
+  if (byDay.length === 0) throw new InvalidRecurrenceError('A weekly rule needs at least one day');
   const days = ORDER.filter((d) => byDay.includes(d));
   return `FREQ=WEEKLY;BYDAY=${days.join(',')}`;
 }

@@ -34,7 +34,7 @@ export function addDays(date: LocalDate, days: number): LocalDate {
   return Temporal.PlainDate.from(date).add({ days }).toString() as LocalDate;
 }
 
-/** Whole minutes from `a` to `b` (b - a). */
+/** Minutes from `a` to `b` (b - a); fractional when the gap is not a whole number of minutes. */
 export function diffMinutes(a: Instant, b: Instant): number {
   return (
     (Temporal.Instant.from(b).epochMilliseconds - Temporal.Instant.from(a).epochMilliseconds) /
