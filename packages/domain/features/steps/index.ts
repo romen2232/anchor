@@ -10,3 +10,4 @@ import './dependencies.steps';
 import './today.steps';
 import './protected-time.steps';
 import './reminders.steps';
+import './rescheduling.steps';
