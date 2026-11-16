@@ -11,3 +11,4 @@ import './today.steps';
 import './protected-time.steps';
 import './reminders.steps';
 import './rescheduling.steps';
+import './editing-routines.steps';

@@ -9,3 +9,4 @@ export * from './today';
 export * from './conflicts';
 export * from './reminders';
 export * from './reschedule';
+export * from './regenerate';
