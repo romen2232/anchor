@@ -1,6 +1,13 @@
 import { Given, Then, When } from 'quickpickle';
 import { expect } from 'vitest';
-import { materialize, occurrenceKey, planRegeneration, snooze, toInstant } from '../../src/index';
+import {
+  materialize,
+  occurrenceKey,
+  planRegeneration,
+  shiftLaterToday,
+  snooze,
+  toInstant,
+} from '../../src/index';
 import type {
   Item,
   LocalDate,
@@ -12,6 +19,7 @@ import type {
 import type { DomainWorld } from './world';
 
 const MONDAY: LocalDate = '2026-11-16';
+const TUESDAY: LocalDate = '2026-11-17';
 const WEDNESDAY: LocalDate = '2026-11-18';
 const WEEKDAYS = 5;
 
@@ -86,4 +94,37 @@ Then('Wednesday stays as I left it', async (world: RoutineWorld) => {
   expect(world.plan!.keep).toContain(wednesday.id);
   expect(world.plan!.remove).not.toContain(wednesday.id);
   expect(world.plan!.create.some((d) => d.localDate === WEDNESDAY)).toBe(false);
+});
+
+Given(
+  "{string} at {int}:{int} every weekday and I moved Tuesday's {string} to tomorrow",
+  async (world: RoutineWorld, title: string, h: number, m: number) => {
+    const item = gym(world, title, hhmm(h, m));
+    world.items = [item];
+    world.now = toInstant(MONDAY, '07:00', world.zone);
+    const all = materialize([item], MONDAY, WEEKDAYS).map(asOccurrence);
+    const tuesday = all.find((o) => o.localDate === TUESDAY)!;
+    const wednesday = all.filter((o) => o.localDate === WEDNESDAY).map((occ) => ({ occ, item }));
+    // Tuesday has no room left, so the shift lands on Wednesday morning.
+    const moved = shiftLaterToday(tuesday, item, {
+      now: tuesday.scheduledStart,
+      dayEnd: tuesday.scheduledEnd,
+      nextDayStart: toInstant(WEDNESDAY, '08:00', world.zone),
+      nextDayEnd: toInstant(WEDNESDAY, '23:59', world.zone),
+      existingToday: [],
+      existingTomorrow: wednesday,
+    });
+    world.occurrences = all.map((o) => (o.id === tuesday.id ? moved : o));
+  },
+);
+
+Then('Tuesday gets no new {string}', async (world: RoutineWorld) => {
+  expect(world.plan!.create.some((d) => d.localDate === TUESDAY)).toBe(false);
+});
+
+Then('the moved {string} stays where I put it', async (world: RoutineWorld) => {
+  const moved = world.occurrences.find((o) => o.movedFrom)!;
+  expect(moved.localDate).toBe(WEDNESDAY);
+  expect(world.plan!.keep).toContain(moved.id);
+  expect(world.plan!.remove).not.toContain(moved.id);
 });

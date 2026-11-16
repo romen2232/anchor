@@ -41,6 +41,7 @@ export function planRegeneration(
     if (isProtected(occ, now) || unchanged) {
       keep.push(occ.id);
       keptKeys.add(key);
+      if (occ.movedFrom) keptKeys.add(occurrenceKey({ itemId: occ.itemId, ...occ.movedFrom }));
     } else {
       remove.push(occ.id);
     }

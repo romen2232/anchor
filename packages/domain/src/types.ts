@@ -42,6 +42,11 @@ export interface Occurrence {
   userModified: boolean;
   actualStart: Instant | null;
   actualEnd: Instant | null;
+  /**
+   * Set when the user moved this occurrence to another day. It still claims the slot it came
+   * from, so regenerating the routine does not bring that day's occurrence back.
+   */
+  movedFrom?: { localDate: LocalDate; sequence: number } | null;
 }
 
 export type OccurrenceDraft = Omit<Occurrence, 'id'>; // id assigned by persistence

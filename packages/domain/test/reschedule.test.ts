@@ -123,6 +123,35 @@ describe('shiftLaterToday', () => {
     expect(result.scheduledStart).toBe(at('11:00'));
   });
 
+  it('remembers where a task moved from when it changes day', () => {
+    const result = shiftLaterToday(occ('a', '09:00', '09:30'), item(), ctx('17:45'));
+    expect(result.movedFrom).toEqual({ localDate: DATE, sequence: 0 });
+  });
+
+  it('does not record a move when the task stays on the same day', () => {
+    const result = shiftLaterToday(occ('a', '09:00', '09:30'), item(), ctx('11:00'));
+    expect(result.movedFrom ?? null).toBeNull();
+  });
+
+  it('keeps the original slot when a moved task moves again', () => {
+    const moved = occ('a', '09:00', '09:30', {
+      localDate: NEXT,
+      sequence: 1,
+      scheduledStart: at('09:00', NEXT),
+      scheduledEnd: at('09:30', NEXT),
+      movedFrom: { localDate: DATE, sequence: 0 },
+    });
+    const result = shiftLaterToday(moved, item(), {
+      ...ctx('17:45'),
+      now: at('17:45', NEXT),
+      dayEnd: at('18:00', NEXT),
+      nextDayStart: at('08:00', '2026-11-18'),
+      nextDayEnd: at('18:00', '2026-11-18'),
+    });
+    expect(result.localDate).toBe('2026-11-18');
+    expect(result.movedFrom).toEqual({ localDate: DATE, sequence: 0 });
+  });
+
   it('gives a task moved to tomorrow a sequence that is free there', () => {
     const result = shiftLaterToday(
       occ('a', '09:00', '09:30'),

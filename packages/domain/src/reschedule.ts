@@ -106,6 +106,10 @@ export function shiftLaterToday(occ: Occurrence, item: Item, ctx: RescheduleCont
     scheduledEnd: placed.end,
     snoozedUntil: null,
     userModified: true,
+    movedFrom:
+      placed.localDate === occ.localDate
+        ? (occ.movedFrom ?? null)
+        : (occ.movedFrom ?? { localDate: occ.localDate, sequence: occ.sequence }),
   };
 }
 

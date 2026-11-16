@@ -110,4 +110,22 @@ describe('planRegeneration', () => {
     const existing = persisted(drafts(routine('09:00')));
     expect(occurrenceKey(existing[0]!)).toBe(occurrenceKey(drafts(routine('09:00'))[0]!));
   });
+
+  it('does not recreate the draft of a day the user moved elsewhere', () => {
+    const existing = persisted(drafts(routine('09:00'))).map((o) =>
+      o.localDate === '2026-11-17'
+        ? {
+            ...o,
+            localDate: '2026-11-18',
+            sequence: 1,
+            userModified: true,
+            movedFrom: { localDate: '2026-11-17', sequence: 0 },
+          }
+        : o,
+    );
+    const plan = planRegeneration(existing, drafts(routine('10:00')), BEFORE_ALL);
+    expect(plan.create.map((d) => d.localDate)).not.toContain('2026-11-17');
+    expect(plan.keep).toEqual(['occ-2026-11-17']);
+    expect(plan.remove).not.toContain('occ-2026-11-17');
+  });
 });
