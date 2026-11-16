@@ -3,3 +3,4 @@ import './world';
 import './defaults.steps';
 import './time-zones.steps';
 import './weekly-routine.steps';
+import './planning-the-week.steps';
