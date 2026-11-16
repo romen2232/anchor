@@ -150,8 +150,8 @@ describe('isBlocked', () => {
   });
 
   it('lists each open dependency once, in dependsOn order', () => {
-    const c = item('c', ['a', 'b', 'a']);
-    const day = [occurrence('a'), occurrence('b'), occurrence('a', { id: 'a2', sequence: 1 })];
-    expect(isBlocked(occurrence('c'), c, day).waitingOn).toEqual(['a', 'b']);
+    const c = item('c', ['b', 'a', 'b']);
+    const day = [occurrence('a'), occurrence('b'), occurrence('b', { id: 'b2', sequence: 1 })];
+    expect(isBlocked(occurrence('c'), c, day).waitingOn).toEqual(['b', 'a']);
   });
 });
