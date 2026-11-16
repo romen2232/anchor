@@ -41,3 +41,8 @@ export function diffMinutes(a: Instant, b: Instant): number {
     60000
   );
 }
+
+export function toLocalTime(instant: Instant, zone: IanaZone): LocalTime {
+  const t = Temporal.Instant.from(instant).toZonedDateTimeISO(zone);
+  return `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`;
+}

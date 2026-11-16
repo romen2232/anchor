@@ -1,7 +1,15 @@
 import fc from 'fast-check';
 import { Temporal } from 'temporal-polyfill';
 import { describe, expect, it } from 'vitest';
-import { addDays, addMinutes, diffMinutes, toInstant, toLocalDate, weekdayOf } from '../src/index';
+import {
+  addDays,
+  addMinutes,
+  diffMinutes,
+  toInstant,
+  toLocalDate,
+  toLocalTime,
+  weekdayOf,
+} from '../src/index';
 import type { IanaZone, LocalDate, LocalTime } from '../src/index';
 
 describe('toInstant', () => {
@@ -81,5 +89,12 @@ describe('arithmetic across the Madrid 2026-03-29 transition', () => {
   it('addDays steps calendar days', () => {
     expect(addDays('2026-03-28', 1)).toBe('2026-03-29');
     expect(addDays('2026-03-29', 1)).toBe('2026-03-30');
+  });
+});
+
+describe('toLocalTime', () => {
+  it('returns wall-clock time in the zone', () => {
+    expect(toLocalTime('2026-11-17T05:30:00Z', 'Europe/Madrid')).toBe('06:30');
+    expect(toLocalTime('2026-11-17T05:30:00Z', 'America/New_York')).toBe('00:30');
   });
 });
