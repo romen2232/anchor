@@ -5,3 +5,4 @@ import './time-zones.steps';
 import './weekly-routine.steps';
 import './planning-the-week.steps';
 import './transitions.steps';
+import './no-pile-up.steps';
