@@ -4,3 +4,4 @@ export * from './recurrence';
 export * from './materialize';
 export * from './transitions';
 export * from './pile-up';
+export * from './dependencies';
