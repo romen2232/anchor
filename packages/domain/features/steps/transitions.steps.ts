@@ -78,10 +78,11 @@ function warningsOf(world: TransitionsWorld): Warning[] {
 Then(
   'I am told {string} at {word}',
   async (world: TransitionsWorld, message: string, time: string) => {
-    const occurrence = world.warnedOccurrence;
-    if (!occurrence) throw new Error('No heads-ups were checked yet in this scenario');
-    const warning = warningsOf(world).find((w) => w.message === message);
+    const warnings = warningsOf(world);
+    const warning = warnings.find((w) => w.message === message);
     if (!warning) throw new Error(`I was never told "${message}"`);
+    const occurrence = world.warnedOccurrence;
+    if (!occurrence) throw new Error('The checked task is missing from this scenario');
     expect(warning.at).toBe(toInstant(occurrence.localDate, time, world.zone));
   },
 );

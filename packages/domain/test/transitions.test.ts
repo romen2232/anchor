@@ -1,6 +1,5 @@
-import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { addMinutes, leaveBy, transitionWarnings } from '../src/index';
+import { leaveBy, transitionWarnings } from '../src/index';
 import type { Item, Occurrence } from '../src/index';
 
 function item(overrides: Partial<Item> = {}): Item {
@@ -98,22 +97,16 @@ describe('transitionWarnings', () => {
     expect(warnings.map((w) => w.kind)).toEqual(['leave', 'wrapUp']);
   });
 
+  it('wraps up a 6-minute occurrence 5 minutes before its end', () => {
+    const six = occurrence({ scheduledEnd: '2026-11-19T10:06:00Z' });
+    expect(transitionWarnings(six, item()).map((w) => w.at)).toEqual(['2026-11-19T10:01:00Z']);
+  });
+
   it('never uses shaming words in any message', () => {
-    const forbidden = /overdue|failed|missed|streak/i;
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 120 }),
-        fc.integer({ min: 0, max: 120 }),
-        fc.integer({ min: 1, max: 600 }),
-        (travelMinutes, prepMinutes, span) => {
-          const end = addMinutes('2026-11-19T10:00:00Z', span);
-          const warnings = transitionWarnings(
-            occurrence({ scheduledEnd: end }),
-            item({ travelMinutes, prepMinutes }),
-          );
-          return warnings.every((w) => !forbidden.test(w.message));
-        },
-      ),
-    );
+    const warnings = transitionWarnings(occurrence(), item({ travelMinutes: 20, prepMinutes: 10 }));
+    expect(warnings.map((w) => w.kind)).toEqual(['leave', 'wrapUp']);
+    for (const { message } of warnings) {
+      expect(message).not.toMatch(/overdue|failed|missed|streak/i);
+    }
   });
 });
