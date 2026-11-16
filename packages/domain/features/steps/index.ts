@@ -4,3 +4,4 @@ import './defaults.steps';
 import './time-zones.steps';
 import './weekly-routine.steps';
 import './planning-the-week.steps';
+import './transitions.steps';
