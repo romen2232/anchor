@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { addDays, materialize, occurrenceKey } from '../src/index';
+import { addDays, materialize, occurrenceKey, occursOn } from '../src/index';
 import type { Item, LocalDate, Schedule, Weekday } from '../src/index';
 
 const ALL_DAYS: Weekday[] = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
@@ -110,6 +110,13 @@ describe('materialize', () => {
     expect(dst?.scheduledStart).toBe('2026-03-29T01:30:00Z');
   });
 
+  it('picks the earlier instant for an ambiguous autumn time', () => {
+    const drafts = materialize([item({ schedule: weekly(ALL_DAYS, '02:30') })], '2026-10-23', 7);
+    expect(drafts).toHaveLength(7);
+    const dst = drafts.find((d) => d.localDate === '2026-10-25');
+    expect(dst?.scheduledStart).toBe('2026-10-25T00:30:00Z');
+  });
+
   it('sorts by start, then item id, then date', () => {
     const b = item({ id: 'b', schedule: once('2026-11-16', '09:00') });
     const a = item({ id: 'a', schedule: once('2026-11-16', '09:00') });
@@ -145,13 +152,27 @@ describe('materialize', () => {
     );
     fc.assert(
       fc.property(
-        fc.array(scheduleArb, { maxLength: 8 }),
+        fc.array(fc.record({ schedule: scheduleArb, deleted: fc.boolean() }), { maxLength: 8 }),
         fc.integer({ min: 0, max: 30 }),
         fc.integer({ min: 0, max: 14 }),
-        (schedules, offset, days) => {
-          const items = schedules.map((schedule, i) => item({ id: `item-${i}`, schedule }));
-          const drafts = materialize(items, addDays('2026-03-20', offset), days);
-          const keys = drafts.map(occurrenceKey);
+        (specs, offset, days) => {
+          const items = specs.map(({ schedule, deleted }, i) =>
+            item({
+              id: `item-${i}`,
+              schedule,
+              deletedAt: deleted ? '2026-03-01T00:00:00Z' : null,
+            }),
+          );
+          const from = addDays('2026-03-20', offset);
+          let expected = 0;
+          for (const it of items) {
+            if (it.deletedAt !== null) continue;
+            for (let d = 0; d < days; d++) {
+              if (occursOn(it.schedule, addDays(from, d))) expected++;
+            }
+          }
+          const keys = materialize(items, from, days).map(occurrenceKey);
+          expect(keys).toHaveLength(expected);
           expect(new Set(keys).size).toBe(keys.length);
         },
       ),
