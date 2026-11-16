@@ -99,14 +99,53 @@ describe('shiftLaterToday', () => {
     });
   });
 
-  it('does not collide with itself', () => {
+  it('is never blocked by its own old slot and never moves earlier', () => {
     const self = occ('a', '09:00', '09:30');
     const result = shiftLaterToday(
       self,
       item(),
-      ctx('09:00', { existingToday: [{ occ: self, item: item() }] }),
+      ctx('08:00', { existingToday: [{ occ: self, item: item() }] }),
     );
-    expect(result.scheduledStart).toBe(at('09:00'));
+    expect(result.scheduledStart).toBe(at('09:30'));
+  });
+
+  it('searches from now when that is later than the current slot', () => {
+    const result = shiftLaterToday(occ('a', '09:00', '09:30'), item(), ctx('11:10'));
+    expect(result.scheduledStart).toBe(at('11:10'));
+  });
+
+  it('tolerates start and end instants with seconds', () => {
+    const result = shiftLaterToday(
+      occ('a', '09:00', '09:30', { scheduledEnd: '2026-11-16T09:30:20Z' }),
+      item(),
+      ctx('11:00'),
+    );
+    expect(result.scheduledStart).toBe(at('11:00'));
+  });
+
+  it('gives a task moved to tomorrow a sequence that is free there', () => {
+    const result = shiftLaterToday(
+      occ('a', '09:00', '09:30'),
+      item(),
+      ctx('17:45', {
+        existingTomorrow: [
+          {
+            occ: occ('a', '09:00', '09:30', {
+              id: 'occ-a-tomorrow',
+              localDate: NEXT,
+              scheduledStart: at('09:00', NEXT),
+              scheduledEnd: at('09:30', NEXT),
+            }),
+            item: item(),
+          },
+        ],
+      }),
+    );
+    expect(result).toMatchObject({
+      localDate: NEXT,
+      sequence: 1,
+      scheduledStart: at('08:00', NEXT),
+    });
   });
 
   it('leaves room for travel and prep before the start', () => {
@@ -192,10 +231,29 @@ describe('split', () => {
     expect(second.scheduledStart).toBe(at('10:00'));
   });
 
-  it('only splits the remaining time when already started', () => {
+  it('keeps the elapsed time in the first part when already started', () => {
     const [first, second] = split(occ('a', '09:00', '10:00'), item(), ctx('09:30'));
-    expect(first.scheduledEnd).toBe(at('09:15'));
-    expect([second.scheduledStart, second.scheduledEnd]).toEqual([at('09:30'), at('09:45')]);
+    expect([first.scheduledStart, first.scheduledEnd]).toEqual([at('09:00'), at('09:45')]);
+    expect([second.scheduledStart, second.scheduledEnd]).toEqual([at('09:45'), at('10:00')]);
+  });
+
+  it('splits a task that started mid-minute without throwing', () => {
+    const [first, second] = split(occ('a', '09:00', '10:00'), item(), {
+      ...ctx('09:30'),
+      now: '2026-11-16T09:30:30Z',
+    });
+    expect(first.scheduledEnd).toBe(at('09:45'));
+    expect([second.scheduledStart, second.scheduledEnd]).toEqual([at('09:45'), at('10:00')]);
+  });
+
+  it('numbers a repeated split after the parts that already exist', () => {
+    const earlier = occ('a', '10:00', '10:30', { id: 'occ-a-1', sequence: 1 });
+    const [, second] = split(
+      occ('a', '09:00', '10:00'),
+      item(),
+      ctx('09:00', { existingToday: [{ occ: earlier, item: item() }] }),
+    );
+    expect(second.sequence).toBe(2);
   });
 
   it('moves the second part to tomorrow when today is full', () => {

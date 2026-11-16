@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addDays,
   addMinutes,
+  ceilToMinute,
   diffMinutes,
   toInstant,
   toLocalDate,
@@ -96,5 +97,12 @@ describe('toLocalTime', () => {
   it('returns wall-clock time in the zone', () => {
     expect(toLocalTime('2026-11-17T05:30:00Z', 'Europe/Madrid')).toBe('06:30');
     expect(toLocalTime('2026-11-17T05:30:00Z', 'America/New_York')).toBe('00:30');
+  });
+});
+
+describe('ceilToMinute', () => {
+  it('rounds up to the next whole minute and keeps whole minutes', () => {
+    expect(ceilToMinute('2026-11-16T09:30:30Z')).toBe('2026-11-16T09:31:00Z');
+    expect(ceilToMinute('2026-11-16T09:30:00Z')).toBe('2026-11-16T09:30:00Z');
   });
 });

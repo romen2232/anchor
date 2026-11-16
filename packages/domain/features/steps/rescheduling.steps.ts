@@ -19,6 +19,7 @@ const DAY_END: LocalTime = '23:59';
 
 interface RescheduleWorld extends DomainWorld {
   moved?: Occurrence;
+  movedTitle?: string;
   parts?: [Occurrence, OccurrenceDraft];
 }
 
@@ -31,6 +32,7 @@ function addTask(
   scheduledStart: string,
   scheduledEnd: string,
   start: LocalTime,
+  localDate: LocalDate = TODAY,
 ): void {
   const item: Item = {
     id: `item-${world.items.length + 1}`,
@@ -51,7 +53,7 @@ function addTask(
   world.occurrences.push({
     id: `occ-${world.occurrences.length + 1}`,
     itemId: item.id,
-    localDate: TODAY,
+    localDate,
     sequence: 0,
     scheduledStart,
     scheduledEnd,
@@ -72,16 +74,17 @@ function titled(world: RescheduleWorld, title: string): { occ: Occurrence; item:
 }
 
 function context(world: RescheduleWorld, now: string, exclude: Occurrence): RescheduleContext {
-  const existingToday: Existing[] = world.occurrences
-    .filter((o) => o.id !== exclude.id)
-    .map((occ) => ({ occ, item: world.items.find((i) => i.id === occ.itemId)! }));
+  const known = (date: LocalDate): Existing[] =>
+    world.occurrences
+      .filter((o) => o.id !== exclude.id && o.localDate === date)
+      .map((occ) => ({ occ, item: world.items.find((i) => i.id === occ.itemId)! }));
   return {
     now,
     dayEnd: toInstant(TODAY, DAY_END, world.zone),
     nextDayStart: toInstant(TOMORROW, DAY_START, world.zone),
     nextDayEnd: toInstant(TOMORROW, DAY_END, world.zone),
-    existingToday,
-    existingTomorrow: [],
+    existingToday: known(TODAY),
+    existingTomorrow: known(TOMORROW),
   };
 }
 
@@ -109,19 +112,65 @@ When(
     const { occ, item } = titled(world, title);
     const now = toInstant(TODAY, hhmm(h, m), world.zone);
     world.moved = shiftLaterToday(occ, item, context(world, now, occ));
+    world.movedTitle = title;
   },
 );
 
-Then("{string} moves to tomorrow's first free slot", async (world: RescheduleWorld) => {
-  expect(world.moved?.localDate).toBe(TOMORROW);
-  expect(world.moved?.scheduledStart).toBe(toInstant(TOMORROW, DAY_START, world.zone));
-});
+Given(
+  'tomorrow starts with {string} for {int} minutes',
+  async (world: RescheduleWorld, title: string, minutes: number) => {
+    const start = toInstant(TOMORROW, DAY_START, world.zone);
+    addTask(world, title, start, addMinutes(start, minutes), DAY_START, TOMORROW);
+  },
+);
+
+Then(
+  "{string} moves to tomorrow's first free slot",
+  async (world: RescheduleWorld, title: string) => {
+    expect(world.movedTitle).toBe(title);
+    expect(world.moved?.localDate).toBe(TOMORROW);
+    expect(world.moved?.scheduledStart).toBe(toInstant(TOMORROW, DAY_START, world.zone));
+  },
+);
+
+Then(
+  '{string} moves to tomorrow at {int}:{int}',
+  async (world: RescheduleWorld, title: string, h: number, m: number) => {
+    expect(world.movedTitle).toBe(title);
+    expect(world.moved?.localDate).toBe(TOMORROW);
+    expect(world.moved?.scheduledStart).toBe(toInstant(TOMORROW, hhmm(h, m), world.zone));
+  },
+);
+
+function splitAt(world: RescheduleWorld, now: string): void {
+  if (world.items.length !== 1) throw new Error('Splitting needs exactly one task in the scenario');
+  const occ = world.occurrences[0]!;
+  world.parts = split(occ, world.items[0]!, context(world, now, occ));
+}
 
 When('I split it', async (world: RescheduleWorld) => {
-  const occ = world.occurrences[0]!;
-  const item = world.items[0]!;
-  world.parts = split(occ, item, context(world, occ.scheduledStart, occ));
+  splitAt(world, world.occurrences[0]!.scheduledStart);
 });
+
+When('it is {int}:{int} and I split it', async (world: RescheduleWorld, h: number, m: number) => {
+  splitAt(world, toInstant(TODAY, hhmm(h, m), world.zone));
+});
+
+Then(
+  'the parts are {int}:{int}-{int}:{int} and {int}:{int}-{int}:{int}',
+  async (world: RescheduleWorld, ...t: number[]) => {
+    const at = (h: number, m: number) => toInstant(TODAY, hhmm(h, m), world.zone);
+    const [first, second] = world.parts!;
+    expect([first.scheduledStart, first.scheduledEnd]).toEqual([
+      at(t[0]!, t[1]!),
+      at(t[2]!, t[3]!),
+    ]);
+    expect([second.scheduledStart, second.scheduledEnd]).toEqual([
+      at(t[4]!, t[5]!),
+      at(t[6]!, t[7]!),
+    ]);
+  },
+);
 
 Then('I have two {int} minute parts', async (world: RescheduleWorld, minutes: number) => {
   const [first, second] = world.parts!;

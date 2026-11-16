@@ -46,3 +46,10 @@ export function toLocalTime(instant: Instant, zone: IanaZone): LocalTime {
   const t = Temporal.Instant.from(instant).toZonedDateTimeISO(zone);
   return `${String(t.hour).padStart(2, '0')}:${String(t.minute).padStart(2, '0')}`;
 }
+
+/** Rounds up to the next whole minute; whole minutes are returned unchanged. */
+export function ceilToMinute(instant: Instant): Instant {
+  const t = Temporal.Instant.from(instant);
+  const remainder = t.epochMilliseconds % 60000;
+  return formatInstant(remainder === 0 ? t : t.add({ milliseconds: 60000 - remainder }));
+}

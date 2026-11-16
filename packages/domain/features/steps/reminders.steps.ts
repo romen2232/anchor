@@ -17,6 +17,7 @@ const DURATION = 30;
 interface ReminderWorld extends DomainWorld {
   quiet: QuietHours | null;
   jobs?: ReminderJob[];
+  plannedTitle?: string;
 }
 
 const hhmm = (h: number, m: number): LocalTime =>
@@ -85,6 +86,7 @@ Given(
   async (world: ReminderWorld, title: string, h: number, m: number) => {
     const { item, occ } = addTask(world, title, hhmm(h, m), { reminderPolicy: 'full' });
     world.jobs = plan(world, item, occ);
+    world.plannedTitle = title;
   },
 );
 
@@ -97,6 +99,7 @@ Given(
   async (world: ReminderWorld, title: string, h: number, m: number) => {
     const { item, occ } = addTask(world, title, hhmm(h, m), { essential: false });
     world.jobs = plan(world, item, occ);
+    world.plannedTitle = title;
   },
 );
 
@@ -125,6 +128,8 @@ Then('I get nothing more', async (world: ReminderWorld) => {
   expect(world.jobs?.map((j) => j.level)).toEqual(['gentle', 'insistent', 'repeat']);
 });
 
-Then('I get no reminders for {string}', async (world: ReminderWorld) => {
+Then('I get no reminders for {string}', async (world: ReminderWorld, title: string) => {
+  expect(world.plannedTitle).toBe(title);
+  expect(world.items.map((i) => i.title)).toContain(title);
   expect(world.jobs).toEqual([]);
 });

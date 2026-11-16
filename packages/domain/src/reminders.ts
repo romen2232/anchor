@@ -75,7 +75,13 @@ export function planReminders(input: PlanRemindersInput): ReminderJob[] {
     ];
   }
 
+  // Quiet hours apply to when each job would fire: gentle is always muted, the rest only for
+  // non-essential items.
+  const muted = (j: ReminderJob): boolean =>
+    quiet !== null && isQuiet(j.at, quiet) && (j.level === 'gentle' || !item.essential);
+
   return jobs
     .filter((j) => !(quietAtStart && j.level === 'gentle'))
+    .filter((j) => !muted(j))
     .filter((j) => ms(j.at) >= ms(now));
 }

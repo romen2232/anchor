@@ -138,4 +138,32 @@ describe('planReminders', () => {
     });
     expect(jobs.map((j) => j.at)).toEqual([at('09:20'), at('09:30'), at('09:35')]);
   });
+
+  it('drops a gentle job that would fire inside quiet hours even when the start is not quiet', () => {
+    const jobs = planReminders({ ...base, quiet, occ: occ('07:05', '07:35'), item: item() });
+    expect(jobs.map((j) => j.level)).toEqual(['insistent', 'repeat']);
+  });
+
+  it('drops a non-essential repeat that falls inside quiet hours', () => {
+    const jobs = planReminders({ ...base, quiet, occ: occ('21:58', '22:28'), item: item() });
+    expect(jobs.map((j) => j.level)).toEqual(['gentle', 'insistent']);
+  });
+
+  it('drops the gentle job of an essential item starting right when quiet hours end', () => {
+    const jobs = planReminders({
+      ...base,
+      quiet,
+      occ: occ('07:00', '07:30'),
+      item: item({ essential: true }),
+    });
+    expect(jobs.map((j) => j.level)).toEqual(['insistent', 'repeat']);
+  });
+
+  it('drops a ready job released inside quiet hours unless the item is essential', () => {
+    const released = { ...base, quiet, releasedAt: at('23:00'), occ: occ('08:00', '08:30') };
+    expect(planReminders({ ...released, item: item() })).toEqual([]);
+    expect(
+      planReminders({ ...released, item: item({ essential: true }) }).map((j) => j.level),
+    ).toEqual(['ready']);
+  });
 });
