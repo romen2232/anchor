@@ -51,13 +51,19 @@ function scheduleOf(world: WeeklyWorld, name: string): Schedule {
   return schedule;
 }
 
+function nameOf(code: Weekday): string {
+  const entry = Object.entries(WEEKDAYS).find(([, c]) => c === code);
+  if (!entry) throw new Error(`Unknown weekday code ${code}`);
+  return entry[0];
+}
+
 function checkedDateOf(weekday: string, day: number, month: string): LocalDate {
   const expected = WEEKDAYS[weekday];
   if (!expected) throw new Error(`Unknown weekday ${weekday}`);
   const date = dateOf(day, month);
   const actual = weekdayOf(date);
   if (actual !== expected) {
-    throw new Error(`${weekday} ${day} ${month} is not a ${weekday}: ${date} is a ${actual}`);
+    throw new Error(`Expected ${weekday}, but ${date} is a ${nameOf(actual)}`);
   }
   return date;
 }

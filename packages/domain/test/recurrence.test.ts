@@ -32,6 +32,7 @@ describe('parseRRule', () => {
     ['surrounding whitespace', ' FREQ=WEEKLY;BYDAY=MO '],
     ['inner whitespace', 'FREQ=WEEKLY; BYDAY=MO'],
     ['whitespace inside the day list', 'FREQ=WEEKLY;BYDAY=MO, TU'],
+    ['an empty day token', 'FREQ=WEEKLY;BYDAY=MO,,TU'],
   ])('rejects %s', (_label, rule) => {
     expect(() => parseRRule(rule)).toThrow(InvalidRecurrenceError);
   });
