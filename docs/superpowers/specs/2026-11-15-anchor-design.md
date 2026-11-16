@@ -1,4 +1,4 @@
-# Scheduler — Design
+# Anchor — Design
 
 Date: 2026-11-15
 Status: Approved (2026-11-15)

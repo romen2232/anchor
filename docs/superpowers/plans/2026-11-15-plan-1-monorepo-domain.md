@@ -14,7 +14,7 @@
 - **TDD:** edge cases live in fast Vitest unit/property tests in `packages/domain/test/*.test.ts`.
 - Git history shows red → green per task (see Task Loop).
 
-**Spec:** `docs/superpowers/specs/2026-11-15-scheduler-design.md`
+**Spec:** `docs/superpowers/specs/2026-11-15-anchor-design.md`
 
 **Follow-up plans (not in this document):** Plan 2 API + worker (`apps/api`, `packages/contracts`), Plan 3 web (`apps/web`, `packages/design-tokens`), Plan 4 Android (`apps/mobile`).
 
@@ -34,7 +34,7 @@
 
 Each task's numbered steps are executed inside this loop. "Commit" in a task means the two commits below.
 
-1. **Red (outer):** write the task's **Scenarios** in its `.feature` file and their step definitions in `features/steps/<name>.steps.ts`, calling the task's **Produces** functions. Run `pnpm --filter @scheduler/domain test` → scenarios FAIL.
+1. **Red (outer):** write the task's **Scenarios** in its `.feature` file and their step definitions in `features/steps/<name>.steps.ts`, calling the task's **Produces** functions. Run `pnpm --filter @anchor/domain test` → scenarios FAIL.
 2. **Red (inner):** write the task's unit/property tests (Step 1 of the task). Run → FAIL.
 3. **Commit:** `test(domain): specify <rule>` — failing scenarios and tests only. Use `git commit --no-verify` if a hook blocks red commits; never push this commit alone.
 4. **Green:** implement until unit tests **and** scenarios PASS. Refactor with tests green.
@@ -155,8 +155,8 @@ export const DEFAULTS = {
 - [ ] **Step 1:** `git init`; create root files. Root scripts: `test` → `pnpm -r test`, `typecheck` → `pnpm -r typecheck`, `lint` → `eslint .`. CI runs `pnpm i --frozen-lockfile && pnpm lint && pnpm typecheck && pnpm test` on Node 22.
 - [ ] **Step 2: Write failing test** `smoke.test.ts`: `expect(DEFAULTS.bufferMinutes).toBe(10)` and `expect(DEFAULTS.materializeDays).toBe(7)`.
 - [ ] **Step 2b: BDD harness.** Configure `vitest.config.ts` with the `quickpickle` plugin, `include: ['test/**/*.test.ts', 'features/**/*.feature']`, `setupFiles: ['features/steps/**/*.steps.ts']`. Create `features/steps/world.ts` (World holding `items: Item[]`, `occurrences: Occurrence[]`, `zone: IanaZone` default `'Europe/Madrid'`, `now: Instant`) and `features/defaults.feature`: _Scenario: New users get breathing room — Given I am a new user, Then each task is followed by a 10 minute buffer._ Run → FAIL with undefined steps, then define them.
-- [ ] **Step 3:** Run `pnpm --filter @scheduler/domain test` → FAIL (module not found).
-- [ ] **Step 4:** Create `types.ts` exactly as above; export from `index.ts`. Package name `@scheduler/domain`, `"type": "module"`.
+- [ ] **Step 3:** Run `pnpm --filter @anchor/domain test` → FAIL (module not found).
+- [ ] **Step 4:** Create `types.ts` exactly as above; export from `index.ts`. Package name `@anchor/domain`, `"type": "module"`.
 - [ ] **Step 5:** Run `pnpm test && pnpm typecheck && pnpm lint` → all PASS.
 - [ ] **Step 6: Commit** `chore: scaffold monorepo and domain types`
 
