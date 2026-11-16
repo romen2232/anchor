@@ -8,3 +8,4 @@ import './transitions.steps';
 import './no-pile-up.steps';
 import './dependencies.steps';
 import './today.steps';
+import './protected-time.steps';

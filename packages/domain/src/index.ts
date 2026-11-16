@@ -6,3 +6,4 @@ export * from './transitions';
 export * from './pile-up';
 export * from './dependencies';
 export * from './today';
+export * from './conflicts';
