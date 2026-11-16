@@ -139,12 +139,32 @@ describe('collapsePileUp', () => {
         for (const o of occs) {
           if (returned.has(o.id)) expect(isStartedUnfinished(o)).toBe(true);
         }
-        const remaining = new Map<string, number>();
+        const keyOf = (o: Occurrence): [number, string, number] => [
+          Date.parse(o.scheduledStart),
+          o.localDate,
+          o.sequence,
+        ];
+        const isLater = (a: Occurrence, b: Occurrence): boolean => {
+          const [aStart, aDate, aSeq] = keyOf(a);
+          const [bStart, bDate, bSeq] = keyOf(b);
+          if (aStart !== bStart) return aStart > bStart;
+          if (aDate !== bDate) return aDate > bDate;
+          return aSeq > bSeq;
+        };
+
+        const startedByItem = new Map<string, Occurrence[]>();
         for (const o of occs) {
-          if (returned.has(o.id) || !isStartedUnfinished(o)) continue;
-          remaining.set(o.itemId, (remaining.get(o.itemId) ?? 0) + 1);
+          if (!isStartedUnfinished(o)) continue;
+          startedByItem.set(o.itemId, [...(startedByItem.get(o.itemId) ?? []), o]);
         }
-        for (const count of remaining.values()) expect(count).toBeLessThanOrEqual(1);
+        for (const [itemId, started] of startedByItem) {
+          const kept = started.filter((o) => !returned.has(o.id));
+          expect(kept, `item ${itemId}`).toHaveLength(1);
+          const [only] = kept;
+          for (const o of started) {
+            if (o !== only) expect(only && isLater(only, o)).toBe(true);
+          }
+        }
       }),
     );
   });
