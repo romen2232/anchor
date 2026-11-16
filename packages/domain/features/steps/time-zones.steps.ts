@@ -1,7 +1,7 @@
 import { Given, Then, When } from 'quickpickle';
 import { expect } from 'vitest';
 import { toInstant } from '../../src/index';
-import type { IanaZone, LocalDate, LocalTime } from '../../src/index';
+import type { IanaZone, Instant, LocalDate, LocalTime } from '../../src/index';
 import type { DomainWorld } from './world';
 
 const MONTHS: Record<string, string> = {
@@ -10,15 +10,23 @@ const MONTHS: Record<string, string> = {
 };
 
 interface TimeWorld extends DomainWorld {
-  routines: Map<string, LocalTime>;
+  routines?: Map<string, LocalTime>;
   day?: LocalDate;
+}
+
+function instantOf(world: TimeWorld, name: string): Instant {
+  if (!world.day) throw new Error('No date was set: say "it is <day> <month> <year>" first');
+  const time = world.routines?.get(name);
+  if (!time) throw new Error(`No routine named "${name}" was set up in this scenario`);
+  return toInstant(world.day, time, world.zone);
 }
 
 Given(
   'I live in {word} and have {string} at {word}',
   async (world: TimeWorld, zone: string, name: string, time: string) => {
     world.zone = zone as IanaZone;
-    world.routines = new Map([[name, time as LocalTime]]);
+    world.routines ??= new Map();
+    world.routines.set(name, time as LocalTime);
   },
 );
 
@@ -32,14 +40,14 @@ When(
 );
 
 Then('{string} starts at {word} UTC', async (world: TimeWorld, name: string, utc: string) => {
-  const instant = toInstant(world.day!, world.routines.get(name)!, world.zone);
+  const instant = instantOf(world, name);
   expect(instant.slice(11, 16)).toBe(utc);
 });
 
 Then(
   '{string} happens at {word} local time',
   async (world: TimeWorld, name: string, local: string) => {
-    const instant = toInstant(world.day!, world.routines.get(name)!, world.zone);
+    const instant = instantOf(world, name);
     const wall = new Intl.DateTimeFormat('en-GB', {
       timeZone: world.zone,
       hour: '2-digit',

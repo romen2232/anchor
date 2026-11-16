@@ -1,7 +1,7 @@
 import { Given, Then } from 'quickpickle';
 import { expect } from 'vitest';
-import { occursOn, toRRule, parseRRule } from '../../src/index';
-import type { LocalDate, Schedule, Weekday } from '../../src/index';
+import { occursOn, weekdayOf } from '../../src/index';
+import type { LocalDate, LocalTime, Schedule, Weekday } from '../../src/index';
 import type { DomainWorld } from './world';
 
 const WEEKDAYS: Record<string, Weekday> = {
@@ -17,7 +17,7 @@ const WEEKDAYS: Record<string, Weekday> = {
 const MONTHS: Record<string, string> = { Nov: '11' };
 
 interface WeeklyWorld extends DomainWorld {
-  schedules: Map<string, Schedule>;
+  schedules?: Map<string, Schedule>;
 }
 
 Given(
@@ -28,17 +28,14 @@ Given(
       if (!code) throw new Error(`Unknown weekday ${d}`);
       return code;
     });
-    world.schedules = new Map([
-      [
-        name,
-        {
-          type: 'weekly',
-          byDay: parseRRule(toRRule(byDay)),
-          startTime: '09:00',
-          zone: world.zone,
-        } as Schedule,
-      ],
-    ]);
+    const schedule: Schedule = {
+      type: 'weekly',
+      byDay,
+      startTime: '09:00' as LocalTime,
+      zone: world.zone,
+    };
+    world.schedules ??= new Map();
+    world.schedules.set(name, schedule);
   },
 );
 
@@ -48,16 +45,33 @@ function dateOf(day: number, month: string): LocalDate {
   return `2026-${mm}-${String(day).padStart(2, '0')}` as LocalDate;
 }
 
+function scheduleOf(world: WeeklyWorld, name: string): Schedule {
+  const schedule = world.schedules?.get(name);
+  if (!schedule) throw new Error(`No routine named "${name}" was set up in this scenario`);
+  return schedule;
+}
+
+function checkedDateOf(weekday: string, day: number, month: string): LocalDate {
+  const expected = WEEKDAYS[weekday];
+  if (!expected) throw new Error(`Unknown weekday ${weekday}`);
+  const date = dateOf(day, month);
+  const actual = weekdayOf(date);
+  if (actual !== expected) {
+    throw new Error(`${weekday} ${day} ${month} is not a ${weekday}: ${date} is a ${actual}`);
+  }
+  return date;
+}
+
 Then(
   '{string} is planned on {word} {int} {word}',
-  async (world: WeeklyWorld, name: string, _weekday: string, day: number, month: string) => {
-    expect(occursOn(world.schedules.get(name)!, dateOf(day, month))).toBe(true);
+  async (world: WeeklyWorld, name: string, weekday: string, day: number, month: string) => {
+    expect(occursOn(scheduleOf(world, name), checkedDateOf(weekday, day, month))).toBe(true);
   },
 );
 
 Then(
   '{string} is not planned on {word} {int} {word}',
-  async (world: WeeklyWorld, name: string, _weekday: string, day: number, month: string) => {
-    expect(occursOn(world.schedules.get(name)!, dateOf(day, month))).toBe(false);
+  async (world: WeeklyWorld, name: string, weekday: string, day: number, month: string) => {
+    expect(occursOn(scheduleOf(world, name), checkedDateOf(weekday, day, month))).toBe(false);
   },
 );
